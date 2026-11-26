@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Evenly",
+    "name": "SplitFree",
     "slug": "evenly",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -18,7 +18,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.example.evenly"
+      "package": "com.example.evenly",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,10 +28,24 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0F766E",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#0B3F3A"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "description": "Split bills evenly with friends. 100% free — no ads, no limits."
   }
 }

@@ -1,4 +1,4 @@
-# Evenly — expense-splitting app
+# SplitFree (formerly Evenly) — free expense-splitting app
 
 An expense-splitting mobile app (Splitwise-style) built with **React Native + Expo** on top of a serverless **Azure** backend.
 

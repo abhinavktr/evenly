@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/auth';
 import { config } from '../src/config';
@@ -75,11 +75,15 @@ function SignIn() {
     <View style={{ flex: 1, justifyContent: 'center', padding: 28, gap: 16, backgroundColor: t.bg }}>
       <StatusBar style="auto" />
       <View style={{ alignItems: 'center', gap: 8, marginBottom: 24 }}>
-        <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <T size={36} weight="700" color={t.primaryText}>=</T>
-        </View>
-        <T size={30} weight="700">Evenly</T>
-        <T muted center>Split bills with friends and groups.{'\n'}Keep track of who owes who.</T>
+        <Image source={require('../assets/logo.png')} style={{ width: 96, height: 96 }} accessibilityIgnoresInvertColors />
+        <T size={32} weight="700">SplitFree</T>
+        <T size={17} weight="600" color={t.primary}>Split evenly. Always free.</T>
+        <T muted center>Share bills with friends, flatmates and trips.{'\n'}No ads, no premium tier, no limits.</T>
+      </View>
+      <View style={{ gap: 6, marginBottom: 8 }}>
+        {['Equal, exact, % or share-based splits', 'Groups, balances and simplified debts', 'Unlimited expenses — free forever'].map((line) => (
+          <T key={line} muted size={14}>✓  {line}</T>
+        ))}
       </View>
       {config.authMode === 'dev' ? (
         <>
