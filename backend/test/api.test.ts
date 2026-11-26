@@ -157,6 +157,11 @@ test('full flow: invite, group, expenses, balances, settle, activity', async () 
   // can't remove C while they owe money
   assert.equal((await call(A, 'DELETE', `groups/${gid}/members/${encodeURIComponent(C)}`)).status, 409);
 
+  // new expenses must belong to a group, even between friends
+  const noGroup = await call(A, 'POST', 'expenses', { description: 'x', amount: 100, currency: 'AED', paidBy: [{ userId: A, amount: 100 }], shares: [{ userId: B, amount: 100 }] });
+  assert.equal(noGroup.status, 400);
+  assert.match(noGroup.body.error, /group/);
+
   // non-group expense with a non-friend is refused
   const stranger = await call(A, 'POST', 'expenses', { description: 'x', amount: 100, currency: 'AED', paidBy: [{ userId: A, amount: 100 }], shares: [{ userId: 'zed@example.com', amount: 100 }] });
   assert.equal(stranger.status, 400);

@@ -61,6 +61,7 @@ app.http('expenses-create', {
   route: 'expenses',
   handler: route(async ({ user, body }) => {
     const p = parseExpense(await body());
+    if (!p.groupId) throw new HttpError(400, 'Choose a group for this expense');
     const g = await checkParticipants(user.id, p.groupId, p.participantIds);
     const t = now();
     const doc: ExpenseDoc = { id: randomUUID(), kind: 'expense', ...p, createdBy: user.id, createdAt: t, updatedAt: t };

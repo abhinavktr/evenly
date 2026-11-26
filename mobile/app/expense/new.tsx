@@ -16,25 +16,111 @@ interface Ctx {
 
 const toInput = (minor: number, currency: string) => (minor / 10 ** decimals(currency)).toFixed(decimals(currency));
 
-/** Add or edit an expense. Params: groupId? | friendId? | id? (edit) */
+/**
+ * Add or edit an expense. Params: groupId? | friendId? | id? (edit)
+ * New expenses always belong to a group: without a groupId the user first picks one or creates one.
+ */
 export default function ExpenseForm() {
   const params = useLocalSearchParams<{ groupId?: string; friendId?: string; id?: string }>();
+  const friendId = params.friendId ? decodeURIComponent(params.friendId) : undefined;
+  const [groupId, setGroupId] = useState(params.groupId);
+
+  if (!params.id && !groupId) return <GroupPicker friendId={friendId} onPick={setGroupId} />;
+  return <ExpenseLoader id={params.id} groupId={groupId} friendId={friendId} />;
+}
+
+function ExpenseLoader({ id, groupId: chosenGroup, friendId }: { id?: string; groupId?: string; friendId?: string }) {
   const api = useApi();
   const { me } = useMe();
 
   const ctx = useLoad<Ctx>(async () => {
-    const existing = params.id ? await api.expense(params.id) : undefined;
-    const groupId = existing?.groupId ?? params.groupId ?? null;
+    const existing = id ? await api.expense(id) : undefined;
+    const groupId = existing?.groupId ?? chosenGroup ?? null;
     if (groupId) {
       const g = await api.group(groupId);
       return { people: g.members, groupId, groupName: g.group.name, currency: existing?.currency ?? g.group.currency, existing };
     }
+    // only reachable when editing an older expense that was created without a group
     const friends = await api.friends();
     return { people: [me!, ...friends], groupId: null, currency: existing?.currency ?? me!.defaultCurrency ?? 'AED', existing };
-  }, [params.id, params.groupId]);
+  }, [id, chosenGroup]);
 
   if (!ctx.data || !me) return ctx.error ? <Screen><ErrorText error={ctx.error} /></Screen> : <Loading />;
-  return <Form ctx={ctx.data} meId={me.id} friendId={params.friendId} />;
+  return <Form ctx={ctx.data} meId={me.id} friendId={friendId} />;
+}
+
+/** Step 1 for a new expense: choose an existing group or create one (pre-filled with the friend, if any). */
+function GroupPicker({ friendId, onPick }: { friendId?: string; onPick: (groupId: string) => void }) {
+  const api = useApi();
+  const t = useTheme();
+  const { me, nameOf } = useMe();
+  const data = useLoad(async () => {
+    const [groups, friends] = await Promise.all([api.groups(), api.friends()]);
+    return { groups, friends };
+  });
+  const [name, setName] = useState('');
+  const [currency, setCurrency] = useState(me?.defaultCurrency ?? 'AED');
+  const [members, setMembers] = useState<string[]>(friendId ? [friendId] : []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+
+  if (!data.data) return data.error ? <Screen><ErrorText error={data.error} /></Screen> : <Loading />;
+  const { groups, friends } = data.data;
+  // groups that include the friend come first
+  const sorted = friendId
+    ? [...groups.filter((g) => g.memberIds.includes(friendId)), ...groups.filter((g) => !g.memberIds.includes(friendId))]
+    : groups;
+  const withFriend = friendId ? groups.filter((g) => g.memberIds.includes(friendId)).length : 0;
+  const toggle = (id: string) => setMembers((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
+
+  const create = async () => {
+    setBusy(true); setError(undefined);
+    try {
+      const g = await api.createGroup({ name: name.trim(), currency, members: members.map((email) => ({ email })) });
+      onPick(g.id);
+    } catch (e: any) { setError(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <Screen>
+      <Stack.Screen options={{ title: 'Add expense' }} />
+      <T muted>Every expense belongs to a group. Choose one{friendId ? ` with ${nameOf(friendId)}` : ''}, or create a new group.</T>
+
+      {sorted.length > 0 && (
+        <Section title="Choose a group">
+          <Card>
+            {sorted.map((g, i) => (
+              <Row
+                key={g.id}
+                title={g.name}
+                subtitle={`${g.memberIds.length} members · ${g.currency}${friendId && i < withFriend ? ` · with ${nameOf(friendId)}` : ''}`}
+                right={<T color={t.primary} weight="600">Select</T>}
+                onPress={() => onPick(g.id)}
+                last={i === sorted.length - 1}
+              />
+            ))}
+          </Card>
+        </Section>
+      )}
+
+      <Section title="Or create a new group">
+        <Input placeholder={friendId ? `e.g. ${nameOf(friendId)} & me` : 'e.g. Weekend trip'} value={name} onChangeText={setName} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {CURRENCIES.map((c) => <Chip key={c} label={c} active={c === currency} onPress={() => setCurrency(c)} />)}
+        </View>
+        {friends.length > 0 && (
+          <>
+            <T muted size={13}>Members (you're included automatically)</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {friends.map((f) => <Chip key={f.id} label={f.name} active={members.includes(f.id)} onPress={() => toggle(f.id)} />)}
+            </View>
+          </>
+        )}
+        <ErrorText error={error} />
+        <Button title="Create group and continue" onPress={create} busy={busy} disabled={!name.trim()} />
+      </Section>
+    </Screen>
+  );
 }
 
 function Form({ ctx, meId, friendId }: { ctx: Ctx; meId: string; friendId?: string }) {
