@@ -19,8 +19,8 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: t.card }, headerTitleStyle: { color: t.text },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Friends', headerRight: headerButton('Add friend', '/friend/add'), tabBarIcon: ({ color }) => <Icon glyph="👤" color={color} /> }} />
-      <Tabs.Screen name="groups" options={{ title: 'Groups', headerRight: headerButton('New group', '/group/new'), tabBarIcon: ({ color }) => <Icon glyph="👥" color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Groups', headerRight: headerButton('New group', '/group/new'), tabBarIcon: ({ color }) => <Icon glyph="👥" color={color} /> }} />
+      <Tabs.Screen name="friends" options={{ title: 'Friends', headerRight: headerButton('Add friend', '/friend/add'), tabBarIcon: ({ color }) => <Icon glyph="👤" color={color} /> }} />
       <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: ({ color }) => <Icon glyph="🕘" color={color} /> }} />
       <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: ({ color }) => <Icon glyph="⚙︎" color={color} /> }} />
     </Tabs>
