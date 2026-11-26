@@ -52,6 +52,7 @@ function AppStack() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="friend/add" options={{ title: 'Add friend', presentation: 'modal' }} />
         <Stack.Screen name="friend/[id]" options={{ title: '' }} />
         <Stack.Screen name="group/new" options={{ title: 'New group', presentation: 'modal' }} />

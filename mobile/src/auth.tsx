@@ -1,4 +1,5 @@
 import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -7,6 +8,14 @@ import { config, entra } from './config';
 WebBrowser.maybeCompleteAuthSession();
 
 const KEY = 'evenly.session';
+const PENDING_KEY = 'evenly.pendingAuth';
+
+/** Saved before opening the browser so a restarted app can still redeem the code. */
+interface Pending {
+  state: string;
+  verifier: string;
+  redirectUri: string;
+}
 
 interface Session {
   accessToken?: string;
@@ -65,27 +74,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     expiresAt: Date.now() + (t.expiresIn ?? 3600) * 1000,
   });
 
+  /**
+   * Redeems an authorization code exactly once.
+   * The code can arrive two ways: as the result of promptAsync (normal case), or as a deep link
+   * (evenly://auth?code=…) when Android restarted the app while the user was away — e.g. reading
+   * the sign-up verification email. The PKCE verifier is persisted so the second path still works.
+   */
+  const redeemed = useRef(new Set<string>());
+  const exchangeOnce = useCallback(
+    async (code: string, state: string | undefined) => {
+      if (!discovery || redeemed.current.has(code)) return;
+      redeemed.current.add(code);
+      const raw = await SecureStore.getItemAsync(PENDING_KEY);
+      const pending = raw ? (JSON.parse(raw) as Pending) : null;
+      if (!pending || (state && pending.state && state !== pending.state)) {
+        if (!sessionRef.current) setError('Sign-in expired. Please try again.');
+        return;
+      }
+      await SecureStore.deleteItemAsync(PENDING_KEY);
+      try {
+        const token = await AuthSession.exchangeCodeAsync(
+          { clientId: config.clientId, code, redirectUri: pending.redirectUri, extraParams: { code_verifier: pending.verifier } },
+          discovery,
+        );
+        setError(undefined);
+        await save(fromToken(token));
+      } catch (e: any) {
+        setError(e?.message ?? 'Could not complete sign-in');
+      }
+    },
+    [discovery, save],
+  );
+
   const signIn = useCallback(async () => {
     setError(undefined);
-    if (!request || !discovery) {
+    if (!request || !discovery || !request.codeVerifier) {
       setError('Sign-in is not configured. Check the EXPO_PUBLIC_ENTRA_* settings.');
       return;
     }
+    const pending: Pending = { state: request.state, verifier: request.codeVerifier, redirectUri };
+    await SecureStore.setItemAsync(PENDING_KEY, JSON.stringify(pending));
     const result = await promptAsync();
-    if (result.type !== 'success') {
-      if (result.type === 'error') setError(result.error?.message ?? 'Sign-in failed');
-      return;
-    }
-    try {
-      const token = await AuthSession.exchangeCodeAsync(
-        { clientId: config.clientId, code: result.params.code, redirectUri, extraParams: { code_verifier: request.codeVerifier! } },
-        discovery,
-      );
-      await save(fromToken(token));
-    } catch (e: any) {
-      setError(e?.message ?? 'Could not complete sign-in');
-    }
-  }, [request, discovery, promptAsync, redirectUri, save]);
+    if (result.type === 'success') await exchangeOnce(result.params.code, result.params.state);
+    else if (result.type === 'error') setError(result.error?.message ?? 'Sign-in failed');
+    // 'dismiss'/'cancel': if the code arrives as a deep link instead, the effect below handles it
+  }, [request, discovery, promptAsync, redirectUri, exchangeOnce]);
+
+  // Deep-link path: evenly://auth?code=…&state=… (cold start or app restarted mid sign-up)
+  const url = Linking.useURL();
+  useEffect(() => {
+    if (!url || !discovery) return;
+    const { path, queryParams } = Linking.parse(url);
+    if (!path?.replace(/\//g, '').startsWith('auth')) return;
+    const q = (queryParams ?? {}) as Record<string, string | undefined>;
+    if (q.code) exchangeOnce(q.code, q.state);
+    else if (q.error && !sessionRef.current) setError(q.error_description ?? q.error);
+  }, [url, discovery, exchangeOnce]);
 
   const signInDev = useCallback(async (email: string) => save({ devEmail: email.trim().toLowerCase() }), [save]);
 
