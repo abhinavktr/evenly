@@ -31,3 +31,14 @@ From `backend/`, create a `local.settings.json` containing
 npm ci && npm run build
 func azure functionapp publish evenly-api-hh7ohqo3kftvq
 ```
+
+## Google sign-in (added 26 Nov 2026)
+
+| Item | Value |
+|---|---|
+| Google Cloud project | `splitfree-515916`, consent screen "Splitzy", **In production** (External) |
+| OAuth client | Web, `1062784208273-97b74qu2l9c966nbgiddc2i4tc6pada2.apps.googleusercontent.com` (the secret is stored only in Entra) |
+| Entra | Google identity provider configured and enabled on the `signup_signin` user flow |
+| Public pages | https://evenly-api-hh7ohqo3kftvq.azurewebsites.net/api/home and /api/privacy |
+
+Adding a logo to the Google consent screen triggers Google's verification review, so the consent screen deliberately has no logo.
