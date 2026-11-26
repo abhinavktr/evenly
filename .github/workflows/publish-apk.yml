@@ -1,0 +1,45 @@
+name: Publish APK to branch
+
+# Copies the APK from the latest successful "Android APK" run onto the `apk` branch,
+# so it can be fetched with plain git.
+on:
+  workflow_run:
+    workflows: ["Android APK"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find latest successful APK run
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ID=$(gh run list -R "$GITHUB_REPOSITORY" -w "Android APK" -s success -L 1 --json databaseId -q '.[0].databaseId')
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: evenly-apk
+          run-id: ${{ steps.run.outputs.id }}
+          github-token: ${{ github.token }}
+          path: out
+      - name: Commit APK to `apk` branch
+        run: |
+          cd out
+          git init -q -b apk
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          mv app-release.apk evenly.apk
+          git add evenly.apk
+          git commit -qm "APK from run ${{ steps.run.outputs.id }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" apk
