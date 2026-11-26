@@ -76,7 +76,7 @@ function SignIn() {
       <StatusBar style="auto" />
       <View style={{ alignItems: 'center', gap: 8, marginBottom: 24 }}>
         <Image source={require('../assets/logo.png')} style={{ width: 96, height: 96 }} accessibilityIgnoresInvertColors />
-        <T size={32} weight="700">SplitFree</T>
+        <T size={32} weight="700">Splitzy</T>
         <T size={17} weight="600" color={t.primary}>Split evenly. Always free.</T>
         <T muted center>Share bills with friends, flatmates and trips.{'\n'}No ads, no premium tier, no limits.</T>
       </View>
