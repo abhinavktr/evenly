@@ -1,11 +1,11 @@
-const env = process.env;
-
+// Expo only inlines EXPO_PUBLIC_* values when they are read as `process.env.EXPO_PUBLIC_X`
+// literally — don't alias process.env or destructure it.
 export const config = {
-  apiUrl: (env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7071/api').replace(/\/$/, ''),
-  tenantId: env.EXPO_PUBLIC_ENTRA_TENANT_ID ?? '',
-  subdomain: env.EXPO_PUBLIC_ENTRA_SUBDOMAIN ?? '',
-  clientId: env.EXPO_PUBLIC_ENTRA_CLIENT_ID ?? '',
-  authMode: (env.EXPO_PUBLIC_AUTH_MODE ?? 'entra') as 'entra' | 'dev',
+  apiUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7071/api').replace(/\/$/, ''),
+  tenantId: process.env.EXPO_PUBLIC_ENTRA_TENANT_ID ?? '',
+  subdomain: process.env.EXPO_PUBLIC_ENTRA_SUBDOMAIN ?? '',
+  clientId: process.env.EXPO_PUBLIC_ENTRA_CLIENT_ID ?? '',
+  authMode: (process.env.EXPO_PUBLIC_AUTH_MODE ?? 'entra') as 'entra' | 'dev',
 };
 
 export const entra = {
