@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "COSMOS_ENDPOINT": "https://<your-cosmos-account>.documents.azure.com:443/",
+    "COSMOS_KEY": "<cosmos-primary-key>",
+    "COSMOS_DATABASE": "evenly",
+    "ENTRA_TENANT_ID": "<external-tenant-guid>",
+    "ENTRA_TENANT_SUBDOMAIN": "<your-tenant-subdomain>",
+    "ENTRA_API_CLIENT_ID": "<app-registration-client-id>",
+    "AUTH_MODE": "entra"
+  },
+  "Host": { "CORS": "*" }
+}

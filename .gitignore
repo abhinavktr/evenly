@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.expo/
+mobile/android/
+mobile/ios/
+backend/local.settings.json
+*.log
